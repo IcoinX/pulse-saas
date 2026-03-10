@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PULSE Protocol - Event Streaming for AI Agents</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        :root {
+            --primary: #7C3AED;
+            --primary-dark: #6D28D9;
+            --secondary: #00D1FF;
+            --accent: #00FFA3;
+            --dark: #0F0F1A;
+            --dark-card: #1A1A2E;
+            --text: #E2E8F0;
+            --text-muted: #94A3B8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+                radial-gradient(            background: 
+ellipse at 20% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 209, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(0, 255, 163, 0.05) 0%, transparent 70%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        /* API Preview */
+        .api-preview {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 60px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .code {
+            font-family: 'Fira Code', monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .code .keyword { color: #C792EA; }
+        .code .string { color: #C3E88D; }
+        .code .comment { color: #546E7A; }
+
+        /* Pricing */
+        .pricing {
+            padding: 80px 0;
+        }
+
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .pricing-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 40px 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
+        }
+
+        .pricing-card.featured::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .pricing-card li {
+            padding: 10px 0;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pricing-card li::before {
+            content: '✓';
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+        }
+
+        /* Features */
+        .features {
+            padding: 80px 0;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(124, 58, 237, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h4 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Dashboard Preview */
+        .dashboard-preview {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .dashboard-preview h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-preview p {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .dashboard-img {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 900px;
+            margin: 0 auto;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        /* CTA */
+        .cta {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .cta p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.5rem;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        /* Stripe Elements */
+        #card-element {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Loading */
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 2000;
+            transform: translateX(200%);
+            transition: transform 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-color: var(--accent);
+        }
+
+        .toast.error {
+            border-color: #EF4444;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .pricing-grid, .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">⚡ PULSE</div>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#docs">Docs</a></li>
+                </ul>
+                <button class="btn btn-primary" onclick="openModal('login')">Get API Key</button>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Event Streaming<br><span>for AI Agents</span></h1>
+            <p>Real-time event infrastructure for autonomous agents. Emit, track, and analyze events across your entire agent ecosystem.</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="openModal('signup')">Start Free</button>
+                <button class="btn btn-secondary" onclick="scrollToPricing()">View Pricing</button>
+            </div>
+
+            <div class="api-preview">
+                <div class="code">
+<span class="keyword">// Emit an event</span>
+<span class="comment">// POST /api/events</span>
+curl -X POST https://api.pulseprotocol.co/api/events \
+  -H <span class="string">"X-API-Key: your_api_key"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "event_type": "agent.task.completed",
+    "payload": {
+      "task_id": "task_123",
+      "result": "success"
+    }
+  }'</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="container">
+            <h2>Built for Agent Infrastructure</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Real-time Events</h4>
+                    <p>Emit events with sub-millisecond latency. Perfect for time-critical agent workflows.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h4>API Key Management</h4>
+                    <p>Generate, manage, and revoke API keys with granular access control.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h4>Event Analytics</h4>
+                    <p>Track event usage, monitor rate limits, and analyze agent performance.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔌</div>
+                    <h4>Easy Integration</h4>
+                    <p>RESTful API with SDKs for Python, JavaScript, and more.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <h4>Flexible Pricing</h4>
+                    <p>Free tier for testing, scalable plans for production. Pay as you grow.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h4>Enterprise Security</h4>
+                    <p>SOC 2 compliant infrastructure with end-to-end encryption.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2>Simple, Transparent Pricing</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="price">$0<span>/month</span></div>
+                    <ul>
+                        <li>1,000 events/month</li>
+                        <li>100 events/hour rate limit</li>
+                        <li>1 API Key</li>
+                        <li>24h event retention</li>
+                        <li>Community support</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="selectTier('free')">Get Started</button>
+                </div>
+
+                <div class="pricing-card featured">
+                    <h3>Pro</h3>
+                    <div class="price">$49<span>/month</span></div>
+                    <ul>
+                        <li>50,000 events/month</li>
+                        <li>1,000 events/hour rate limit</li>
+                        <li>10 API Keys</li>
+                        <li>30-day event retention</li>
+                        <li>Email support</li>
+                        <li>Custom webhooks</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="selectTier('pro')">Start Pro</button>
+                </div>
+
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">$499<span>/month</span></div>
+                    <ul>
+                        <li>500,000 events/month</li>
+                        <li>10,000 events/hour rate limit</li>
+                        <li>Unlimited API Keys</li>
+                        <li>1-year event retention</li>
+                        <li>24/7 Priority support</li>
+                        <li>Dedicated infrastructure</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="selectTier('enterprise')">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-preview">
+        <div class="container">
+            <h2>Powerful Dashboard</h2>
+            <p>Monitor your events, manage API keys, and analyze usage patterns.</p>
+            <div class="dashboard-img">
+                📊 Dashboard Coming Soon - Real-time event visualization & analytics
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Power Your Agents?</h2>
+            <p>Start emitting events in minutes. No credit card required for free tier.</p>
+            <button class="btn btn-primary" onclick="openModal('signup')">Get Your Free API Key</button>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2026 PULSE Protocol. Built for autonomous agents.</p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">×</button>
+            <h3 id="modalTitle">Sign Up</h3>
+            <form id="authForm">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <input type="text" id="fullName" placeholder="Full Name (optional)">
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Sign Up</button>
+                </div>
+            </form>
+            <p style="margin-top: 20px; text-align: center; color: var(--text-muted);">
+                <span id="switchAuth">Already have an account? <a href="#" onclick="switchAuthMode()" style="color: var(--primary);">Sign In</a></span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'https://fast-comics-tap.loca.lt/api';
+        // In production, change to: https://api.pulseprotocol.co/api
+
+        let authMode = 'signup';
+        let selectedTier = 'free';
+        
+        // Stripe initialization (use your actual publishable key)
+        // const stripe = Stripe('pk_test_your_key_here');
+
+        function openModal(mode) {
+            authMode = mode === 'login' ? 'login' : 'signup';
+            document.getElementById('modalTitle').textContent = authMode === 'signup' ? 'Sign Up' : 'Sign In';
+            document.getElementById('submitBtn').textContent = authMode === 'signup' ? 'Sign Up' : 'Sign In';
+            document.getElementById('switchAuth').innerHTML = authMode === 'signup' 
+                ? 'Already have an account? <a href="#" onclick="switchAuthMode()" style="color: var(--primary);">Sign In</a>'
+                : 'Need an account? <a href="#" onclick="switchAuthMode()" style="color: var(--primary);">Sign Up</a>';
+            document.getElementById('authModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('authModal').classList.remove('active');
+        }
+
+        function switchAuthMode() {
+            authMode = authMode === 'signup' ? 'login' : 'signup';
+            openModal(authMode);
+        }
+
+        function scrollToPricing() {
+            document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function selectTier(tier) {
+            selectedTier = tier;
+            if (tier === 'free') {
+                openModal('signup');
+            } else {
+                openModal('signup');
+            }
+        }
+
+        // Handle Auth Form
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const fullName = document.getElementById('fullName').value;
+
+            const btn = document.getElementById('submitBtn');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showToast('Please enter email and password', 'error');
+                btn.classList.remove('loading');
+                btn.textContent = authMode === 'signup' ? 'Sign Up' : 'Sign In';
+                return;
+            }
+
+            btn.classList.add('loading');
+            btn.textContent = 'Processing...';
+
+            try {
+                const endpoint = authMode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
+                const response = await fetch(API_BASE + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+                
+                if (authMode === 'signup') {
+                    showToast('Account created! Check your email to verify.', 'success');
+                    if (data.api_key) {
+                        showToast(`Your API Key: ${data.api_key}`, 'success');
+                    }
+                } else {
+                    showToast('Signed in successfully!', 'success');
+                    // Store session
+                    localStorage.setItem('pulse_session', JSON.stringify(data.session));
+                    if (data.api_keys && data.api_keys.length > 0) {
+                        localStorage.setItem('pulse_api_key', data.api_keys[0].key_prefix + '...');
+                    }
+                }
+                
+                closeModal();
+                
+                if (selectedTier !== 'free' && authMode === 'signup') {
+                    showToast(`Redirecting to ${selectedTier.toUpperCase()} checkout...`, 'success');
+                }
+            } catch (error) {
+                showToast(error.message || 'An error occurred', 'error');
+            } finally {
+                btn.classList.remove('loading');
+                btn.textContent = authMode === 'signup' ? 'Sign Up' : 'Sign In';
+            }
+        });
+
+        // Stripe Checkout (placeholder - configure with real Stripe keys)
+        async function createCheckoutSession(tier) {
+            const prices = {
+                pro: 'price_pro_monthly',
+                enterprise: 'price_enterprise_monthly'
+            };
+
+            // In production:
+            // const response = await fetch(`${API_BASE}/subscription/create-checkout`, {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ tier })
+            // });
+            // const { checkoutUrl } = await response.json();
+            // window.location.href = checkoutUrl;
+
+            showToast(`Stripe checkout for ${tier} plan would open here.\nConfigure STRIPE_SECRET_KEY to enable.`, 'success');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }
+
+        // Close modal on outside click
+        document.getElementById('authModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('authModal')) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
